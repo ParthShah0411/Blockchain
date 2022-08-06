@@ -44,7 +44,18 @@ contract Bank {
         return true;
     }
 
-    function deposit() public payable returns (bool) {
+    function updateUserDetails(
+        address _address,
+        string memory _name,
+        uint256 _age
+    ) external onlyManager returns (bool) {
+        User storage user = users[_address];
+        user.name = _name;
+        user.age = _age;
+        return true;
+    }
+
+    function deposit() external payable returns (bool) {
         require(msg.value != 0, "_amount should not be zero");
         User storage user = users[msg.sender];
         user.currentBalance = user.currentBalance + msg.value;
@@ -53,6 +64,21 @@ contract Bank {
         user.transactions[user.totalTransactions].amount = msg.value;
         user.totalTransactions += 1;
         return true;
+    }
+
+    function withdrawal(uint256 _amount) external payable returns (bool) {
+        User storage user = users[msg.sender];
+
+        require(_amount <= user.currentBalance, "Insufficient balance");
+
+        user.currentBalance = user.currentBalance - _amount;
+        user.transactions[user.totalTransactions].action = Action.Withdrawal;
+        user.transactions[user.totalTransactions].time = block.timestamp;
+        user.transactions[user.totalTransactions].amount = _amount;
+        user.totalTransactions += 1;
+
+        address payable participant = msg.sender;
+        (participant).transfer(_amount);
     }
 
     function getUserDetails(address _user)
